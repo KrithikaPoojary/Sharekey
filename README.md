@@ -2,28 +2,6 @@
 
 > A secure, zero-knowledge content and secret sharing platform with access tokens, client-side AES-256-GCM encryption, and self-destruct capabilities.
 
-![ShareKey Cyber Security](https://img.shields.io/badge/Security-AES--256--GCM-10B981?style=for-the-badge)
-![Node.js](https://img.shields.io/badge/Node.js-v22+-339933?style=for-the-badge&logo=node.js)
-![Express](https://img.shields.io/badge/Express-4.21-000000?style=for-the-badge&logo=express)
-![SQLite](https://img.shields.io/badge/SQLite-WAL--Mode-003B57?style=for-the-badge&logo=sqlite)
-
----
-
-## 🌟 Key Features
-
-- 🔑 **Unique Access Tokens**: Human-friendly, cryptographically random keys (e.g. `SK-8F92-K4D2`) or custom vanity tokens.
-- 🛡️ **Zero-Knowledge Encryption**: Optional client-side AES-256-GCM authenticated encryption with PBKDF2 (100,000 rounds) key derivation. Unencrypted data never leaves the browser.
-- 🔥 **Burn After Reading**: Configurable one-time self-destruct policy that permanently erases the secret from database storage immediately after the first view.
-- ⏱️ **Granular Expiration**: Set automatic expiration for 5 minutes, 1 hour, 24 hours, 7 days, 30 days, or manual revocation.
-- 🗄️ **Creator Vault & Revocation**: Local vault history allowing creators to track views and permanently revoke access tokens at any time using their private creator key.
-- 📱 **QR Code & Direct Links**: Instant QR code generator and one-click sharing via WhatsApp, Email, or clipboard.
-- 💻 **Syntax Detection & File Upload**: Drag-and-drop support for `.env`, `.json`, `.js`, `.py`, `.sql`, `.md`, and `.txt` files with word and line counters.
-- 💎 **Cyber-Luxe Glassmorphism**: Sleek, high-performance responsive UI built with vanilla CSS tokens and smooth micro-interactions.
-
----
-
-## 🚀 Getting Started
-
 ### Prerequisites
 - [Node.js](https://nodejs.org/) (v18 or newer)
 - npm
@@ -93,7 +71,3 @@ x-creator-key: CRK-xxxxxxxxxxxxxxxxxxxxxxxx
 3. **Automatic Purging**: A background task automatically scrubs expired and burned records from SQLite.
 4. **WAL Persistence**: Uses SQLite Write-Ahead Logging for high concurrent throughput and reliability.
 
----
-
-## 📄 License
-MIT License. Free for open source use.
