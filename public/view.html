@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShareKey - Retrieve Secure Secret</title>
+  <meta name="description" content="View and decrypt secure shared content with ShareKey access token.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .viewer-box {
+      max-width: 850px;
+      margin: 0 auto;
+    }
+    .burn-alert {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--danger);
+      color: #fca5a5;
+      padding: 14px 20px;
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .content-display-wrapper {
+      position: relative;
+      background: #080c16;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin: 20px 0;
+    }
+    .display-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 18px;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--border-color);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .code-content-view {
+      padding: 20px;
+      margin: 0;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      line-height: 1.65;
+      color: #e5e7eb;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 600px;
+      overflow-y: auto;
+      user-select: text;
+    }
+    .meta-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .loader-spinner {
+      width: 44px;
+      height: 44px;
+      border: 3px solid rgba(16, 185, 129, 0.2);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 40px auto;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Background Animated Grid -->
+  <div class="bg-grid"></div>
+
+  <div class="container">
+    <!-- Navbar -->
+    <header class="navbar">
+      <a href="/" class="brand">
+        <div class="brand-icon">🔑</div>
+        <div class="brand-name">Share<span>Key</span></div>
+      </a>
+
+      <div class="security-beacon">
+        <span class="beacon-dot"></span>
+        <span>Secure Decryption Portal</span>
+      </div>
+
+      <nav class="nav-links">
+        <a href="/" class="nav-btn">
+          <span>➕</span> Create New Share
+        </a>
+      </nav>
+    </header>
+
+    <!-- Main Dynamic Viewer Card -->
+    <main class="viewer-box">
+      <!-- 1. LOADING STATE -->
+      <div id="view-loading" class="glass-card" style="text-align: center; padding: 60px 20px;">
+        <div class="loader-spinner"></div>
+        <h3 style="margin-top: 16px;">Verifying Access Token...</h3>
+        <p style="color: var(--text-muted); font-size: 14px; margin-top: 6px;">
+          Connecting to ShareKey zero-knowledge vault
+        </p>
+      </div>
+
+      <!-- 2. PASSPHRASE CHALLENGE STATE -->
+      <div id="view-passphrase-challenge" class="glass-card" style="display: none; text-align: center;">
+        <div style="font-size: 44px; margin-bottom: 12px;">🔐</div>
+        <h2>Encrypted Content</h2>
+        <p style="color: var(--text-muted); font-size: 14px; margin-top: 6px;">
+          This share is protected with client-side AES-256-GCM encryption.
+        </p>
+
+        <div id="passphrase-hint-box" style="display: none; background: rgba(6, 182, 212, 0.08); border: 1px dashed var(--cyan); padding: 12px; border-radius: var(--radius-sm); margin: 18px 0; font-size: 13px; color: #67e8f9;">
+          <strong>Passphrase Hint:</strong> <span id="display-hint-text"></span>
+        </div>
+
+        <form id="passphrase-unlock-form" onsubmit="event.preventDefault(); handlePassphraseUnlock();" style="max-width: 440px; margin: 24px auto 0 auto;">
+          <input 
+            type="password" 
+            id="input-unlock-passphrase" 
+            class="custom-input" 
+            placeholder="Enter passphrase to decrypt" 
+            required 
+            style="font-size: 16px; padding: 14px; text-align: center;"
+          >
+          <button type="submit" class="cta-btn" style="margin-top: 16px;">
+            <span>🔓</span> Decrypt & View Secret
+          </button>
+        </form>
+      </div>
+
+      <!-- 3. BURN CONFIRMATION CHALLENGE (Optional Pre-reveal confirmation for 1-time view) -->
+      <div id="view-burn-confirm" class="glass-card" style="display: none; text-align: center;">
+        <div style="font-size: 48px; margin-bottom: 12px;">🔥</div>
+        <h2>One-Time Secret Notice</h2>
+        <p style="color: #fca5a5; font-size: 15px; margin-top: 8px; max-width: 520px; margin-left: auto; margin-right: auto;">
+          This content is configured to <strong>burn immediately after reading</strong>. Once unlocked, the token will be permanently erased.
+        </p>
+        <button type="button" class="cta-btn" id="btn-confirm-reveal" style="max-width: 320px; margin: 24px auto 0 auto; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #fff;">
+          <span>🔥</span> Reveal & Burn Secret
+        </button>
+      </div>
+
+      <!-- 4. SUCCESS CONTENT DISPLAY -->
+      <div id="view-content-success" class="glass-card" style="display: none;">
+        <!-- Burn Notification Banner (if burned) -->
+        <div id="view-burn-banner" class="burn-alert" style="display: none;">
+          <span style="font-size: 20px;">🔥</span>
+          <div>
+            <strong>Self-Destructed:</strong> This secret was one-time view only and has now been permanently destroyed on the server.
+          </div>
+        </div>
+
+        <!-- Title & Metadata -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 14px;">
+          <div>
+            <h2 id="view-title-text" style="font-size: 24px; word-break: break-word;">Secure Content</h2>
+            <div class="meta-badges">
+              <span class="status-tag status-active" id="badge-token">SK-XXXX</span>
+              <span class="status-tag" style="background: rgba(255,255,255,0.06);" id="badge-format">Plain Text</span>
+              <span class="status-tag" style="background: rgba(6, 182, 212, 0.15); color: #38bdf8;" id="badge-expiry">Expires: --</span>
+              <span class="status-tag" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;" id="badge-views">Views: --</span>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="tool-btn" id="btn-copy-secret" style="padding: 8px 16px; font-size: 13px;">
+              📋 Copy All
+            </button>
+            <button type="button" class="tool-btn" id="btn-download-secret" style="padding: 8px 16px; font-size: 13px;">
+              💾 Download
+            </button>
+            <button type="button" class="tool-btn" id="btn-print-secret" style="padding: 8px 14px; font-size: 13px;">
+              🖨️ Print
+            </button>
+          </div>
+        </div>
+
+        <!-- Code/Text Block View -->
+        <div class="content-display-wrapper">
+          <div class="display-toolbar">
+            <span id="view-content-type-label">RAW PAYLOAD</span>
+            <span id="view-stat-counter">0 characters</span>
+          </div>
+          <pre id="view-code-block" class="code-content-view"></pre>
+        </div>
+
+        <!-- Bottom Actions -->
+        <div style="text-align: center; margin-top: 24px;">
+          <a href="/" class="share-pill-btn" style="display: inline-flex;">
+            <span>➕</span> Share your own secret with ShareKey
+          </a>
+        </div>
+      </div>
+
+      <!-- 5. ERROR / EXPIRED / NOT FOUND STATE -->
+      <div id="view-error-card" class="glass-card" style="display: none; text-align: center; padding: 50px 20px;">
+        <div style="font-size: 48px; margin-bottom: 12px;" id="error-icon">⚠️</div>
+        <h2 id="error-title">Token Unavailable</h2>
+        <p id="error-desc" style="color: var(--text-muted); font-size: 15px; margin-top: 10px; max-width: 480px; margin-left: auto; margin-right: auto;">
+          This access token could not be found, has expired, or was already burned after reading.
+        </p>
+        <div style="margin-top: 28px;">
+          <a href="/" class="cta-btn" style="max-width: 240px; margin: 0 auto; text-decoration: none;">
+            <span>🏠</span> Go to Home
+          </a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast notifications -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/js/crypto.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/view.js"></script>
+</body>
+</html>
