@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ShareKey - Secure Zero-Knowledge Content Sharing Platform</title>
+  <meta name="description" content="Share encrypted text, secrets, and code snippets securely with access tokens, self-destruct timers, and client-side AES-GCM encryption.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <!-- Background Animated Grid -->
+  <div class="bg-grid"></div>
+
+  <div class="container">
+    <!-- Navigation Bar -->
+    <header class="navbar">
+      <a href="/" class="brand">
+        <div class="brand-icon">🔑</div>
+        <div class="brand-name">Share<span>Key</span></div>
+      </a>
+
+      <div class="security-beacon">
+        <span class="beacon-dot"></span>
+        <span>AES-256-GCM End-to-End Encrypted</span>
+      </div>
+
+      <nav class="nav-links">
+        <button class="nav-btn active" id="nav-share-tab" onclick="switchMainTab('share')">
+          <span>✨</span> Create Share
+        </button>
+        <button class="nav-btn" id="nav-retrieve-tab" onclick="switchMainTab('retrieve')">
+          <span>🔓</span> Retrieve Token
+        </button>
+        <button class="nav-btn" id="nav-vault-tab" onclick="switchMainTab('vault')">
+          <span>🗄️</span> My Vault (<span id="vault-count">0</span>)
+        </button>
+      </nav>
+    </header>
+
+    <!-- Hero Header -->
+    <section class="hero">
+      <div class="hero-pill">
+        <span>🛡️</span> Zero-Knowledge Secret Distribution
+      </div>
+      <h1 class="hero-title">
+        Share Sensitive Content with <span class="gradient-text">Unique Access Tokens</span>
+      </h1>
+      <p class="hero-subtitle">
+        Enter your secret or snippet, generate an instant access key, and share it securely. Encrypted in your browser with automatic self-destruct options.
+      </p>
+    </section>
+
+    <!-- TAB 1: CREATE SHARE STUDIO -->
+    <main id="tab-share-view" class="tab-content">
+      <div class="glass-card">
+        <div class="editor-header">
+          <input 
+            type="text" 
+            id="share-title" 
+            class="editor-title-input" 
+            placeholder="Secret Title (e.g. Production API Config)"
+            maxlength="100"
+          >
+
+          <div class="editor-tools">
+            <select id="syntax-select" class="custom-select" style="padding: 6px 12px; font-size: 12px; width: auto;">
+              <option value="text/plain">Plain Text</option>
+              <option value="application/json">JSON</option>
+              <option value="text/javascript">JavaScript / TypeScript</option>
+              <option value="text/x-python">Python</option>
+              <option value="text/markdown">Markdown</option>
+              <option value="text/x-env">.ENV Credentials</option>
+              <option value="text/x-sql">SQL Query</option>
+            </select>
+            <button type="button" class="tool-btn" id="btn-paste-clip" title="Paste from clipboard">📋 Paste</button>
+            <button type="button" class="tool-btn" id="btn-sample" title="Insert sample secret">💡 Sample</button>
+            <button type="button" class="tool-btn" id="btn-clear" title="Clear text">🗑️ Clear</button>
+          </div>
+        </div>
+
+        <!-- Content Area -->
+        <div class="editor-box">
+          <textarea 
+            id="share-content" 
+            class="content-textarea" 
+            placeholder="Paste your sensitive keys, passwords, credentials, notes, or code snippet here..." 
+            spellcheck="false"
+            required
+          ></textarea>
+          <div class="editor-footer">
+            <div id="text-counters">
+              <span id="char-count">0 characters</span> • <span id="word-count">0 words</span> • <span id="line-count">1 line</span>
+            </div>
+            <div id="enc-status-indicator">🔒 Client Encrypted</div>
+          </div>
+        </div>
+
+        <!-- File Dropzone -->
+        <div class="file-dropzone" id="file-dropzone">
+          <input type="file" id="file-input" style="display: none;">
+          <div class="dropzone-icon">📁</div>
+          <div class="dropzone-text" id="dropzone-label">
+            <strong>Drop a text file here</strong> or click to browse (.txt, .json, .env, .py, .js, .md)
+          </div>
+          <div class="dropzone-hint">Max file size: 10MB</div>
+        </div>
+
+        <!-- Security Settings Grid -->
+        <div class="settings-grid">
+          <!-- Expiration -->
+          <div class="setting-item">
+            <div class="setting-header">
+              <label class="setting-label" for="expiry-select">
+                <span>⏱️</span> Expiration Timer
+              </label>
+            </div>
+            <p class="setting-desc">Content is permanently purged when time elapses.</p>
+            <select id="expiry-select" class="custom-select">
+              <option value="300">5 Minutes</option>
+              <option value="3600">1 Hour</option>
+              <option value="86400" selected>24 Hours (Recommended)</option>
+              <option value="604800">7 Days</option>
+              <option value="2592000">30 Days</option>
+              <option value="0">Never Expire (Manual Revoke)</option>
+            </select>
+          </div>
+
+          <!-- Self-Destruct / View Limit -->
+          <div class="setting-item">
+            <div class="setting-header">
+              <label class="setting-label">
+                <span>🔥</span> Burn After Reading
+              </label>
+              <label class="switch">
+                <input type="checkbox" id="burn-toggle" class="burn-switch">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <p class="setting-desc">Auto-destruct immediately after 1 retrieval.</p>
+            <div id="view-limit-wrap" style="margin-top: 8px;">
+              <select id="max-views-select" class="custom-select">
+                <option value="0">Unlimited Views (Until Expiry)</option>
+                <option value="1">Strict: 1 View Only (Burn)</option>
+                <option value="3">Max 3 Views</option>
+                <option value="5">Max 5 Views</option>
+                <option value="10">Max 10 Views</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Passphrase Protection -->
+          <div class="setting-item">
+            <div class="setting-header">
+              <label class="setting-label">
+                <span>🔐</span> Passphrase Lock
+              </label>
+              <label class="switch">
+                <input type="checkbox" id="passphrase-toggle">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <p class="setting-desc">Zero-knowledge AES-256-GCM browser encryption.</p>
+            <div id="passphrase-fields" style="display: none; margin-top: 10px;">
+              <input 
+                type="password" 
+                id="share-passphrase" 
+                class="custom-input" 
+                placeholder="Enter a strong passphrase"
+              >
+              <input 
+                type="text" 
+                id="encryption-hint" 
+                class="custom-input" 
+                placeholder="Optional reminder hint for receiver"
+                style="margin-top: 8px; font-size: 13px;"
+              >
+            </div>
+          </div>
+
+          <!-- Custom Vanity Token -->
+          <div class="setting-item">
+            <div class="setting-header">
+              <label class="setting-label">
+                <span>🏷️</span> Custom Access Token
+              </label>
+            </div>
+            <p class="setting-desc">Leave empty for auto-generated `SK-XXXX-XXXX` token.</p>
+            <input 
+              type="text" 
+              id="custom-token-input" 
+              class="custom-input" 
+              placeholder="e.g. MY-VAULT-2026"
+              maxlength="32"
+              style="text-transform: uppercase; font-family: var(--font-mono);"
+            >
+          </div>
+        </div>
+
+        <!-- Submit CTA -->
+        <button type="button" class="cta-btn" id="btn-create-share">
+          <span>⚡</span> Generate Secure Access Key
+        </button>
+      </div>
+    </main>
+
+    <!-- TAB 2: RETRIEVE PORTAL -->
+    <section id="tab-retrieve-view" class="tab-content" style="display: none;">
+      <div class="glass-card retrieve-box">
+        <div style="font-size: 44px; margin-bottom: 12px;">🗝️</div>
+        <h2>Unlock Shared Content</h2>
+        <p class="hero-subtitle" style="margin-top: 8px;">
+          Enter the access token provided by the sender to retrieve the decrypted secret.
+        </p>
+
+        <form id="token-search-form" onsubmit="event.preventDefault(); handleRetrieveSearch();">
+          <div class="token-input-group">
+            <input 
+              type="text" 
+              id="retrieve-token-input" 
+              class="token-big-input" 
+              placeholder="SK-XXXX-XXXX" 
+              autocomplete="off" 
+              required
+            >
+            <button type="button" class="tool-btn" id="btn-paste-token" style="padding: 0 16px;">
+              📋 Paste
+            </button>
+            <button type="submit" class="unlock-btn" id="btn-retrieve-submit">
+              <span>🔓</span> Unlock
+            </button>
+          </div>
+        </form>
+
+        <div style="font-size: 13px; color: var(--text-dim);">
+          💡 Tip: Tokens are case-insensitive. One-time burn secrets will self-destruct once viewed.
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: MY VAULT HISTORY -->
+    <section id="tab-vault-view" class="tab-content" style="display: none;">
+      <div class="glass-card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div>
+            <h2>My Active Shares Vault</h2>
+            <p style="color: var(--text-muted); font-size: 14px;">
+              Shares created from this browser. You can monitor status or revoke access instantly.
+            </p>
+          </div>
+          <button type="button" class="tool-btn" onclick="renderVaultHistory()">🔄 Refresh</button>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="vault-table">
+            <thead>
+              <tr>
+                <th>Title / Token</th>
+                <th>Security</th>
+                <th>Created</th>
+                <th>Expires</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="vault-table-body">
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-dim); padding: 30px;">
+                  No active shares recorded in this browser yet.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- SHARE CREATED SUCCESS MODAL -->
+  <div class="modal-overlay" id="share-success-modal">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeSuccessModal()">✕</button>
+      <div style="text-align: center;">
+        <div style="font-size: 38px; margin-bottom: 10px;">🎉</div>
+        <h2 style="font-size: 22px;">Access Key Generated!</h2>
+        <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">
+          Your secret has been safely encrypted and is ready to share.
+        </p>
+      </div>
+
+      <!-- Key Badge -->
+      <div class="key-badge-card">
+        <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);">
+          ACCESS TOKEN KEY
+        </div>
+        <div class="key-token-display" id="modal-token-text">SK-XXXX-XXXX</div>
+        <button type="button" class="tool-btn" id="btn-copy-token" style="margin: 6px auto 0 auto;">
+          📋 Copy Token
+        </button>
+      </div>
+
+      <!-- Share URL -->
+      <div style="margin-top: 16px;">
+        <label style="font-size: 13px; color: var(--text-muted); font-weight: 600;">Direct Access Link:</label>
+        <div class="share-url-box">
+          <input type="text" id="modal-share-url" class="custom-input" readonly>
+          <button type="button" class="tool-btn" id="btn-copy-url" style="white-space: nowrap;">
+            🔗 Copy Link
+          </button>
+        </div>
+      </div>
+
+      <!-- QR Code Section -->
+      <div class="qr-container" id="modal-qrcode"></div>
+
+      <!-- Social & Sharing Suite -->
+      <div class="share-suite">
+        <a id="btn-share-whatsapp" href="#" target="_blank" class="share-pill-btn">
+          <span>💬</span> WhatsApp
+        </a>
+        <a id="btn-share-email" href="#" target="_blank" class="share-pill-btn">
+          <span>✉️</span> Email
+        </a>
+        <button type="button" class="share-pill-btn" id="btn-open-direct">
+          <span>🚀</span> Open Secret View
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="/js/crypto.js"></script>
+  <script src="/js/qrcode.min.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
