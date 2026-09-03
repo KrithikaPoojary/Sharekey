@@ -63,11 +63,3 @@ x-creator-key: CRK-xxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 ---
-
-## 🔒 Security Architecture
-
-1. **Client-Side Cryptography**: When passphrase protection is enabled, plaintext is encrypted using Web Crypto API (`AES-GCM` with a 12-byte random IV and 16-byte random salt).
-2. **Key Derivation**: Passphrase is stretched using `PBKDF2` with `SHA-256` and 100,000 iterations.
-3. **Automatic Purging**: A background task automatically scrubs expired and burned records from SQLite.
-4. **WAL Persistence**: Uses SQLite Write-Ahead Logging for high concurrent throughput and reliability.
-
