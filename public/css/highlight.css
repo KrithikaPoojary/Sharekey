@@ -1,0 +1,95 @@
+/* Syntax Highlighting Styles */
+
+.syn-keyword {
+  color: #c084fc;
+  font-weight: 600;
+}
+
+.syn-string {
+  color: #34d399;
+}
+
+.syn-number {
+  color: #38bdf8;
+}
+
+.syn-bool {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.syn-null {
+  color: #ef4444;
+}
+
+.syn-comment {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.syn-key {
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+/* Code Line Display */
+.code-line {
+  display: flex;
+  line-height: 1.6;
+}
+
+.code-line:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.line-number {
+  width: 45px;
+  min-width: 45px;
+  user-select: none;
+  text-align: right;
+  padding-right: 18px;
+  color: #4b5563;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.line-content {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* Markdown Rendering */
+.markdown-body {
+  font-family: var(--font-sans);
+  line-height: 1.8;
+  color: #e5e7eb;
+}
+
+.markdown-body .md-h1 {
+  font-size: 24px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+.markdown-body .md-h2 {
+  font-size: 20px;
+  margin: 16px 0 8px 0;
+}
+
+.markdown-body .md-h3 {
+  font-size: 16px;
+  margin: 12px 0 6px 0;
+}
+
+.markdown-body .md-inline-code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: #34d399;
+}
