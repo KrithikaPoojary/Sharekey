@@ -7,16 +7,60 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initApp() {
+  initTheme();
+  initSoundControls();
   initCounters();
   initTools();
   initDropzone();
   initToggles();
+  initPassphraseGenerator();
   initCreation();
   updateVaultBadge();
 }
 
+// Theme Switcher
+function initTheme() {
+  const savedTheme = localStorage.getItem('sharekey_theme') || 'dark';
+  const themeIcon = document.getElementById('theme-icon');
+  const btnTheme = document.getElementById('btn-theme-toggle');
+
+  if (savedTheme === 'light') {
+    document.body.classList.add('light-theme');
+    if (themeIcon) themeIcon.textContent = '☀️';
+  } else {
+    document.body.classList.remove('light-theme');
+    if (themeIcon) themeIcon.textContent = '🌙';
+  }
+
+  btnTheme?.addEventListener('click', () => {
+    ShareAudio.playClick();
+    const isLight = document.body.classList.toggle('light-theme');
+    localStorage.setItem('sharekey_theme', isLight ? 'light' : 'dark');
+    if (themeIcon) themeIcon.textContent = isLight ? '☀️' : '🌙';
+    showToast(`Switched to ${isLight ? 'Light' : 'Dark'} theme`, 'success');
+  });
+}
+
+// Sound Controls
+function initSoundControls() {
+  const btnSound = document.getElementById('btn-sound-toggle');
+  const soundIcon = document.getElementById('sound-icon');
+
+  const updateIcon = () => {
+    if (soundIcon) soundIcon.textContent = ShareAudio.enabled ? '🔊' : '🔇';
+  };
+  updateIcon();
+
+  btnSound?.addEventListener('click', () => {
+    const enabled = ShareAudio.toggle();
+    updateIcon();
+    showToast(`Audio FX ${enabled ? 'Enabled' : 'Muted'}`, 'success');
+  });
+}
+
 // Tab Switching
 function switchMainTab(tab) {
+  ShareAudio.playClick();
   const tabs = ['share', 'retrieve', 'vault'];
   tabs.forEach(t => {
     const view = document.getElementById(`tab-${t}-view`);
@@ -67,8 +111,8 @@ function initTools() {
   const titleInput = document.getElementById('share-title');
   const syntaxSelect = document.getElementById('syntax-select');
 
-  // Paste from clipboard
   document.getElementById('btn-paste-clip')?.addEventListener('click', async () => {
+    ShareAudio.playClick();
     try {
       const text = await navigator.clipboard.readText();
       if (text) {
@@ -81,8 +125,8 @@ function initTools() {
     }
   });
 
-  // Clear editor
   document.getElementById('btn-clear')?.addEventListener('click', () => {
+    ShareAudio.playClick();
     if (textarea.value && confirm('Are you sure you want to clear the editor?')) {
       textarea.value = '';
       titleInput.value = '';
@@ -90,8 +134,8 @@ function initTools() {
     }
   });
 
-  // Insert Sample
   document.getElementById('btn-sample')?.addEventListener('click', () => {
+    ShareAudio.playClick();
     titleInput.value = 'Production DB Credentials';
     syntaxSelect.value = 'text/x-env';
     textarea.value = `# ShareKey Encrypted Database Secrets
@@ -105,8 +149,8 @@ REDIS_URL=rediss://default:p4ssw0rd@redis-cache.internal:6379`;
     showToast('Sample credentials loaded', 'success');
   });
 
-  // Paste Token in Retrieve Tab
   document.getElementById('btn-paste-token')?.addEventListener('click', async () => {
+    ShareAudio.playClick();
     try {
       const text = await navigator.clipboard.readText();
       if (text) {
@@ -131,7 +175,10 @@ function initDropzone() {
 
   if (!dropzone || !fileInput) return;
 
-  dropzone.addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('click', () => {
+    ShareAudio.playClick();
+    fileInput.click();
+  });
 
   ['dragenter', 'dragover'].forEach(name => {
     dropzone.addEventListener(name, (e) => {
@@ -175,7 +222,6 @@ function initDropzone() {
       }
       label.innerHTML = `<strong>Loaded:</strong> ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
       
-      // Auto-detect syntax
       const ext = file.name.split('.').pop().toLowerCase();
       if (ext === 'json') syntaxSelect.value = 'application/json';
       else if (['js', 'ts'].includes(ext)) syntaxSelect.value = 'text/javascript';
@@ -198,6 +244,7 @@ function initToggles() {
   const passphraseFields = document.getElementById('passphrase-fields');
 
   burnToggle?.addEventListener('change', () => {
+    ShareAudio.playClick();
     if (burnToggle.checked) {
       maxViewsSelect.value = '1';
       maxViewsSelect.disabled = true;
@@ -208,6 +255,7 @@ function initToggles() {
   });
 
   passphraseToggle?.addEventListener('change', () => {
+    ShareAudio.playClick();
     if (passphraseToggle.checked) {
       passphraseFields.style.display = 'block';
       document.getElementById('share-passphrase')?.focus();
@@ -217,12 +265,44 @@ function initToggles() {
   });
 }
 
+// Passphrase Generator & Strength Evaluator
+function initPassphraseGenerator() {
+  const passInput = document.getElementById('share-passphrase');
+  const btnGen = document.getElementById('btn-generate-pass');
+  const fillBar = document.getElementById('pass-strength-fill');
+  const textLabel = document.getElementById('pass-strength-text');
+
+  const updateStrength = () => {
+    if (!passInput) return;
+    const res = SharePassphrase.evaluate(passInput.value);
+    if (fillBar) {
+      fillBar.style.width = res.width;
+      fillBar.style.backgroundColor = res.color;
+    }
+    if (textLabel) {
+      textLabel.textContent = res.label;
+      textLabel.style.color = res.color;
+    }
+  };
+
+  passInput?.addEventListener('input', updateStrength);
+
+  btnGen?.addEventListener('click', () => {
+    ShareAudio.playLock();
+    const autoPass = SharePassphrase.generate(16);
+    passInput.value = autoPass;
+    updateStrength();
+    showToast('Secure passphrase generated!', 'success');
+  });
+}
+
 // Share Creation Handler
 function initCreation() {
   const btnCreate = document.getElementById('btn-create-share');
   if (!btnCreate) return;
 
   btnCreate.addEventListener('click', async () => {
+    ShareAudio.playClick();
     const content = document.getElementById('share-content').value.trim();
     const title = document.getElementById('share-title').value.trim() || 'Secure Share';
     const syntax = document.getElementById('syntax-select').value;
@@ -253,7 +333,6 @@ function initCreation() {
       let finalContent = content;
       let passphraseHash = null;
 
-      // Client-Side Zero-Knowledge AES-GCM 256 Encryption
       if (isPassphrase) {
         finalContent = await ShareCrypto.encrypt(content, passphrase);
         passphraseHash = await ShareCrypto.hashString(passphrase);
@@ -273,10 +352,10 @@ function initCreation() {
       };
 
       const result = await ShareAPI.createShare(payload);
+      ShareAudio.playLock();
       displaySuccessModal(result);
       updateVaultBadge();
 
-      // Reset editor
       document.getElementById('share-content').value = '';
       document.getElementById('share-content').dispatchEvent(new Event('input'));
     } catch (err) {
@@ -303,7 +382,6 @@ function displaySuccessModal(shareData) {
   tokenText.textContent = shareData.token;
   urlInput.value = shareData.share_url;
 
-  // Render QR Code
   const qrContainer = document.getElementById('modal-qrcode');
   qrContainer.innerHTML = '';
   qrCodeInstance = new QRCode(qrContainer, {
@@ -314,22 +392,24 @@ function displaySuccessModal(shareData) {
     colorLight: '#ffffff'
   });
 
-  // Share Actions
   const shareMsg = encodeURIComponent(`Secure content shared with you via ShareKey:\nAccess Token: ${shareData.token}\nLink: ${shareData.share_url}`);
   btnWhatsapp.href = `https://api.whatsapp.com/send?text=${shareMsg}`;
   btnEmail.href = `mailto:?subject=${encodeURIComponent('Secure ShareKey Content')}&body=${shareMsg}`;
 
   btnCopyToken.onclick = () => {
+    ShareAudio.playClick();
     navigator.clipboard.writeText(shareData.token);
     showToast('Token copied to clipboard!', 'success');
   };
 
   btnCopyUrl.onclick = () => {
+    ShareAudio.playClick();
     navigator.clipboard.writeText(shareData.share_url);
     showToast('Access link copied!', 'success');
   };
 
   btnOpen.onclick = () => {
+    ShareAudio.playClick();
     window.open(shareData.share_url, '_blank');
   };
 
@@ -337,11 +417,13 @@ function displaySuccessModal(shareData) {
 }
 
 function closeSuccessModal() {
+  ShareAudio.playClick();
   document.getElementById('share-success-modal')?.classList.remove('active');
 }
 
 // Retrieve Search handler
 function handleRetrieveSearch() {
+  ShareAudio.playClick();
   const input = document.getElementById('retrieve-token-input');
   const token = input.value.trim().toUpperCase();
   if (!token) {
@@ -423,6 +505,7 @@ async function revokeFromVault(token, creatorKey) {
   }
 
   try {
+    ShareAudio.playBurn();
     await ShareAPI.revokeShare(token, creatorKey);
     showToast(`Token ${token} permanently revoked.`, 'success');
     renderVaultHistory();
@@ -446,6 +529,7 @@ function formatTimeRemaining(isoDate) {
 }
 
 function copyTextToClipboard(text, msg = 'Copied to clipboard!') {
+  ShareAudio.playClick();
   navigator.clipboard.writeText(text);
   showToast(msg, 'success');
 }
