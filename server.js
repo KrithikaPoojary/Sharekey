@@ -7,6 +7,52 @@ const { dbOps } = require('./db');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Security Headers Middleware
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  next();
+});
+
+// In-Memory Rate Limiting for Token Guessing Protection
+const rateLimitMap = new Map();
+function rateLimiter(limit = 60, windowMs = 60000) {
+  return (req, res, next) => {
+    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const now = Date.now();
+    const entry = rateLimitMap.get(ip) || { count: 0, resetAt: now + windowMs };
+
+    if (now > entry.resetAt) {
+      entry.count = 1;
+      entry.resetAt = now + windowMs;
+    } else {
+      entry.count++;
+    }
+
+    rateLimitMap.set(ip, entry);
+
+    if (entry.count > limit) {
+      return res.status(429).json({
+        success: false,
+        error: 'Too many requests. Please slow down.'
+      });
+    }
+    next();
+  };
+}
+
+// Clean up stale rate-limiting entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, data] of rateLimitMap.entries()) {
+    if (now > data.resetAt) {
+      rateLimitMap.delete(ip);
+    }
+  }
+}, 300000);
+
 // Middlewares
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
@@ -15,7 +61,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Token Generator Helper
 function generateToken(length = 8) {
-  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // base32-like (omits confusing 0, 1, I, O)
+  const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
   let token = 'SK-';
   const bytes = crypto.randomBytes(length);
   for (let i = 0; i < length; i++) {
@@ -29,8 +75,8 @@ function generateCreatorKey() {
   return 'CRK-' + crypto.randomBytes(16).toString('hex');
 }
 
-// API: Create new share
-app.post('/api/shares', (req, res) => {
+// API: Create new share (Rate limited: 30 shares / minute)
+app.post('/api/shares', rateLimiter(30, 60000), (req, res) => {
   try {
     const {
       content,
@@ -40,8 +86,8 @@ app.post('/api/shares', (req, res) => {
       file_size = 0,
       is_encrypted = false,
       encryption_hint = '',
-      expires_in_seconds = null, // e.g. 300 for 5 min, 86400 for 1 day, 0/null for never
-      max_views = 0, // 0 = unlimited
+      expires_in_seconds = null,
+      max_views = 0,
       burn_after_reading = false,
       custom_token = null,
       passphrase_hash = null
@@ -57,14 +103,12 @@ app.post('/api/shares', (req, res) => {
       if (sanitized.length < 4 || sanitized.length > 32) {
         return res.status(400).json({ success: false, error: 'Custom token must be between 4 and 32 alphanumeric characters.' });
       }
-      // Check if already in use
       const existing = dbOps.getShareByToken(sanitized);
       if (existing) {
         return res.status(409).json({ success: false, error: 'This custom token is already in use or taken.' });
       }
       token = sanitized;
     } else {
-      // Generate unique token
       let unique = false;
       let attempts = 0;
       while (!unique && attempts < 10) {
@@ -80,7 +124,6 @@ app.post('/api/shares', (req, res) => {
 
     const creator_key = generateCreatorKey();
 
-    // Calculate expiration timestamp
     let expires_at = null;
     if (expires_in_seconds && Number(expires_in_seconds) > 0) {
       const expDate = new Date(Date.now() + Number(expires_in_seconds) * 1000);
@@ -130,8 +173,8 @@ app.post('/api/shares', (req, res) => {
   }
 });
 
-// API: Get share metadata (peek before unlocking/consuming view)
-app.get('/api/shares/:token/info', (req, res) => {
+// API: Get share metadata
+app.get('/api/shares/:token/info', rateLimiter(100, 60000), (req, res) => {
   try {
     const { token } = req.params;
     const meta = dbOps.getShareMetadata(token.trim().toUpperCase());
@@ -176,8 +219,8 @@ app.get('/api/shares/:token/info', (req, res) => {
   }
 });
 
-// API: Retrieve content (increments view counter, burns if limit reached)
-app.get('/api/shares/:token', (req, res) => {
+// API: Retrieve content
+app.get('/api/shares/:token', rateLimiter(60, 60000), (req, res) => {
   try {
     const token = req.params.token.trim().toUpperCase();
     const result = dbOps.incrementAndCheckView(token);
@@ -223,7 +266,7 @@ app.get('/api/shares/:token', (req, res) => {
   }
 });
 
-// API: Revoke/delete share (using creator key)
+// API: Revoke/delete share
 app.delete('/api/shares/:token', (req, res) => {
   try {
     const token = req.params.token.trim().toUpperCase();
@@ -245,13 +288,13 @@ app.delete('/api/shares/:token', (req, res) => {
   }
 });
 
-// API: Platform Health & Stats
+// API: Platform Health
 app.get('/api/health', (req, res) => {
   try {
     res.json({
       status: 'online',
       platform: 'ShareKey',
-      version: '1.0.0',
+      version: '1.1.0',
       timestamp: new Date().toISOString()
     });
   } catch (err) {
@@ -259,7 +302,7 @@ app.get('/api/health', (req, res) => {
   }
 });
 
-// Clean expired shares on schedule every 60 seconds
+// Scheduled Auto-Cleaner
 setInterval(() => {
   try {
     const cleaned = dbOps.cleanExpiredShares();
@@ -289,6 +332,6 @@ app.listen(PORT, () => {
   console.log(`===========================================`);
   console.log(`🔒 ShareKey Secure Server Running!`);
   console.log(`🌐 Local URL: http://localhost:${PORT}`);
-  console.log(`⚡ Zero-Knowledge AES-GCM + Token Routing Ready`);
+  console.log(`⚡ Rate-Limiting & Security Headers Enabled`);
   console.log(`===========================================`);
 });
