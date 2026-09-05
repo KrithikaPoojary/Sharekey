@@ -1,0 +1,101 @@
+/* Theme Variables & Dark/Light Switcher */
+
+body.light-theme {
+  --bg-main: #f1f5f9;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-card-hover: rgba(255, 255, 255, 0.95);
+  --bg-input: #ffffff;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-glow: rgba(16, 185, 129, 0.2);
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #94a3b8;
+  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+body.light-theme .bg-grid {
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+}
+
+body.light-theme .content-textarea,
+body.light-theme .code-content-view {
+  color: #0f172a;
+}
+
+body.light-theme .modal-card {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-theme .line-number {
+  color: #94a3b8;
+}
+
+body.light-theme .content-display-wrapper {
+  background: #f8fafc;
+}
+
+/* Strength Meter */
+.strength-bar-wrap {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+body.light-theme .strength-bar-wrap {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.strength-bar-fill {
+  height: 100%;
+  width: 0%;
+  transition: all 0.3s ease;
+  border-radius: 3px;
+}
+
+.strength-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  margin-top: 4px;
+  color: var(--text-dim);
+}
+
+/* Screen Wipe Countdown Banner */
+.wipe-progress-container {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 18px;
+}
+
+.wipe-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #f87171;
+  margin-bottom: 8px;
+}
+
+.wipe-progress-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(239, 68, 68, 0.2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.wipe-progress-fill {
+  height: 100%;
+  width: 100%;
+  background: #ef4444;
+  transition: width 1s linear;
+}
