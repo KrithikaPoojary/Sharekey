@@ -7,6 +7,8 @@
   <meta name="description" content="View and decrypt secure shared content with ShareKey access token.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/highlight.css">
   <style>
     .viewer-box {
       max-width: 850px;
@@ -97,6 +99,12 @@
         <a href="/" class="nav-btn">
           <span>➕</span> Create New Share
         </a>
+        <button class="tool-btn" id="btn-sound-toggle" title="Toggle Sound FX">
+          <span id="sound-icon">🔊</span>
+        </button>
+        <button class="tool-btn" id="btn-theme-toggle" title="Toggle Light/Dark Theme">
+          <span id="theme-icon">🌙</span>
+        </button>
       </nav>
     </header>
 
@@ -138,7 +146,7 @@
         </form>
       </div>
 
-      <!-- 3. BURN CONFIRMATION CHALLENGE (Optional Pre-reveal confirmation for 1-time view) -->
+      <!-- 3. BURN CONFIRMATION CHALLENGE -->
       <div id="view-burn-confirm" class="glass-card" style="display: none; text-align: center;">
         <div style="font-size: 48px; margin-bottom: 12px;">🔥</div>
         <h2>One-Time Secret Notice</h2>
@@ -152,11 +160,22 @@
 
       <!-- 4. SUCCESS CONTENT DISPLAY -->
       <div id="view-content-success" class="glass-card" style="display: none;">
-        <!-- Burn Notification Banner (if burned) -->
+        <!-- Screen Wipe Countdown Bar (for burned secrets) -->
+        <div id="wipe-bar-wrap" class="wipe-progress-container" style="display: none;">
+          <div class="wipe-progress-header">
+            <span>🛡️ Screen Self-Destruct in: <strong id="wipe-countdown-seconds">60s</strong></span>
+            <span style="font-size: 11px; color: #fca5a5;">Anti Shoulder-Surfing Active</span>
+          </div>
+          <div class="wipe-progress-track">
+            <div id="wipe-bar-fill" class="wipe-progress-fill"></div>
+          </div>
+        </div>
+
+        <!-- Burn Notification Banner -->
         <div id="view-burn-banner" class="burn-alert" style="display: none;">
           <span style="font-size: 20px;">🔥</span>
           <div>
-            <strong>Self-Destructed:</strong> This secret was one-time view only and has now been permanently destroyed on the server.
+            <strong>Self-Destructed:</strong> This secret was one-time view only and has now been permanently deleted from the database.
           </div>
         </div>
 
@@ -185,13 +204,13 @@
           </div>
         </div>
 
-        <!-- Code/Text Block View -->
+        <!-- Formatted Syntax Content Block -->
         <div class="content-display-wrapper">
           <div class="display-toolbar">
-            <span id="view-content-type-label">RAW PAYLOAD</span>
+            <span id="view-content-type-label">FORMATTED PAYLOAD</span>
             <span id="view-stat-counter">0 characters</span>
           </div>
-          <pre id="view-code-block" class="code-content-view"></pre>
+          <div id="view-code-block" class="code-content-view"></div>
         </div>
 
         <!-- Bottom Actions -->
@@ -222,6 +241,8 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Scripts -->
+  <script src="/js/audio.js"></script>
+  <script src="/js/syntax.js"></script>
   <script src="/js/crypto.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/view.js"></script>
