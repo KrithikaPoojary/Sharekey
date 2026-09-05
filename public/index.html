@@ -7,6 +7,8 @@
   <meta name="description" content="Share encrypted text, secrets, and code snippets securely with access tokens, self-destruct timers, and client-side AES-GCM encryption.">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/css/highlight.css">
 </head>
 <body>
   <!-- Background Animated Grid -->
@@ -34,6 +36,13 @@
         </button>
         <button class="nav-btn" id="nav-vault-tab" onclick="switchMainTab('vault')">
           <span>🗄️</span> My Vault (<span id="vault-count">0</span>)
+        </button>
+        <!-- Audio and Theme Toggles -->
+        <button class="tool-btn" id="btn-sound-toggle" title="Toggle Sound FX">
+          <span id="sound-icon">🔊</span>
+        </button>
+        <button class="tool-btn" id="btn-theme-toggle" title="Toggle Light/Dark Theme">
+          <span id="theme-icon">🌙</span>
         </button>
       </nav>
     </header>
@@ -162,12 +171,28 @@
             </div>
             <p class="setting-desc">Zero-knowledge AES-256-GCM browser encryption.</p>
             <div id="passphrase-fields" style="display: none; margin-top: 10px;">
-              <input 
-                type="password" 
-                id="share-passphrase" 
-                class="custom-input" 
-                placeholder="Enter a strong passphrase"
-              >
+              <div style="display: flex; gap: 6px;">
+                <input 
+                  type="password" 
+                  id="share-passphrase" 
+                  class="custom-input" 
+                  placeholder="Enter passphrase"
+                  style="flex: 1;"
+                >
+                <button type="button" class="tool-btn" id="btn-generate-pass" title="Generate secure passphrase">
+                  🎲 Auto
+                </button>
+              </div>
+
+              <!-- Password Strength Bar -->
+              <div class="strength-bar-wrap">
+                <div class="strength-bar-fill" id="pass-strength-fill"></div>
+              </div>
+              <div class="strength-meta">
+                <span>Strength: <strong id="pass-strength-text">None</strong></span>
+                <span id="pass-strength-entropy">AES-256</span>
+              </div>
+
               <input 
                 type="text" 
                 id="encryption-hint" 
@@ -331,7 +356,10 @@
   <div class="toast-container" id="toast-container"></div>
 
   <!-- Scripts -->
+  <script src="/js/audio.js"></script>
+  <script src="/js/passphrase.js"></script>
   <script src="/js/crypto.js"></script>
+  <script src="/js/syntax.js"></script>
   <script src="/js/qrcode.min.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/app.js"></script>
