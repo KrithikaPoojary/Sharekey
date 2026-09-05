@@ -5,13 +5,51 @@
 let currentToken = '';
 let currentShareMeta = null;
 let rawSecretPayload = '';
+let wipeInterval = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  initSoundControls();
   initViewer();
 });
 
+function initTheme() {
+  const savedTheme = localStorage.getItem('sharekey_theme') || 'dark';
+  const themeIcon = document.getElementById('theme-icon');
+  const btnTheme = document.getElementById('btn-theme-toggle');
+
+  if (savedTheme === 'light') {
+    document.body.classList.add('light-theme');
+    if (themeIcon) themeIcon.textContent = '☀️';
+  } else {
+    document.body.classList.remove('light-theme');
+    if (themeIcon) themeIcon.textContent = '🌙';
+  }
+
+  btnTheme?.addEventListener('click', () => {
+    ShareAudio.playClick();
+    const isLight = document.body.classList.toggle('light-theme');
+    localStorage.setItem('sharekey_theme', isLight ? 'light' : 'dark');
+    if (themeIcon) themeIcon.textContent = isLight ? '☀️' : '🌙';
+  });
+}
+
+function initSoundControls() {
+  const btnSound = document.getElementById('btn-sound-toggle');
+  const soundIcon = document.getElementById('sound-icon');
+
+  const updateIcon = () => {
+    if (soundIcon) soundIcon.textContent = ShareAudio.enabled ? '🔊' : '🔇';
+  };
+  updateIcon();
+
+  btnSound?.addEventListener('click', () => {
+    const enabled = ShareAudio.toggle();
+    updateIcon();
+  });
+}
+
 async function initViewer() {
-  // Extract token from URL
   const pathParts = window.location.pathname.split('/');
   let tokenFromPath = '';
   if (pathParts.length >= 3 && (pathParts[1] === 'v' || pathParts[1] === 'view')) {
@@ -33,23 +71,19 @@ async function initViewer() {
 
 async function loadSecretWorkflow() {
   try {
-    // 1. Fetch metadata first without consuming view limit
     const meta = await ShareAPI.getShareInfo(currentToken);
     currentShareMeta = meta;
 
-    // Check if passphrase protected
     if (meta.is_encrypted) {
       showPassphraseChallenge(meta);
       return;
     }
 
-    // Check if strict 1-time burn (confirm before burning)
     if (meta.burn_after_reading) {
       showBurnConfirmation(meta);
       return;
     }
 
-    // Otherwise directly fetch secret payload
     await fetchAndDisplayContent();
   } catch (err) {
     showErrorState('Secret Unavailable', err.message || 'The requested secret has expired, was burned, or does not exist.', '🔒');
@@ -79,11 +113,13 @@ function showBurnConfirmation(meta) {
   confirmCard.style.display = 'block';
 
   document.getElementById('btn-confirm-reveal').onclick = async () => {
+    ShareAudio.playBurn();
     await fetchAndDisplayContent();
   };
 }
 
 async function handlePassphraseUnlock() {
+  ShareAudio.playClick();
   const passphraseInput = document.getElementById('input-unlock-passphrase');
   const passphrase = passphraseInput.value;
 
@@ -94,10 +130,8 @@ async function handlePassphraseUnlock() {
 
   try {
     const data = await ShareAPI.getShareContent(currentToken);
-    
-    // Decrypt in browser using Web Crypto API
     const decryptedText = await ShareCrypto.decrypt(data.content, passphrase);
-    
+    ShareAudio.playUnlock();
     renderSuccessContent(data, decryptedText);
   } catch (err) {
     showToast(err.message || 'Incorrect passphrase.', 'error');
@@ -117,6 +151,7 @@ async function fetchAndDisplayContent() {
       return;
     }
 
+    ShareAudio.playUnlock();
     renderSuccessContent(data, content);
   } catch (err) {
     showErrorState('Unable to Load Secret', err.message, '⚠️');
@@ -139,44 +174,46 @@ function renderSuccessContent(data, plaintext) {
   const typeLabel = document.getElementById('view-content-type-label');
 
   titleEl.textContent = data.title || 'Secure Share';
-  codeBlock.textContent = plaintext;
+  
+  // Syntax Highlighting formatting
+  codeBlock.innerHTML = ShareSyntax.highlight(plaintext, data.content_type || 'text/plain');
+  
   tokenBadge.textContent = data.token;
   
-  // Format info
   const formatName = getFormatLabel(data.content_type);
   formatBadge.textContent = formatName;
   typeLabel.textContent = formatName.toUpperCase();
 
-  // Expiry badge
   if (data.expires_at) {
     expiryBadge.textContent = `Expires: ${new Date(data.expires_at).toLocaleString()}`;
   } else {
     expiryBadge.textContent = 'Never Expiring';
   }
 
-  // Views badge
   if (data.max_views > 0) {
     viewsBadge.textContent = `Views: ${data.current_views} / ${data.max_views}`;
   } else {
     viewsBadge.textContent = `Views: ${data.current_views} (Unlimited)`;
   }
 
-  // Burn Alert
+  // Handle Burn & Screen-wipe countdown
   if (data.is_burned_now || data.burn_after_reading) {
     burnBanner.style.display = 'flex';
+    startScreenWipeCountdown(60);
   } else {
     burnBanner.style.display = 'none';
   }
 
   statCounter.textContent = `${plaintext.length.toLocaleString()} characters • ${plaintext.split('\n').length} lines`;
 
-  // Init button triggers
   document.getElementById('btn-copy-secret').onclick = () => {
+    ShareAudio.playClick();
     navigator.clipboard.writeText(plaintext);
     showToast('Secret content copied to clipboard!', 'success');
   };
 
   document.getElementById('btn-download-secret').onclick = () => {
+    ShareAudio.playClick();
     downloadPayloadAsFile(data.title || 'sharekey-secret', plaintext, data.content_type);
   };
 
@@ -185,6 +222,35 @@ function renderSuccessContent(data, plaintext) {
   };
 
   successCard.style.display = 'block';
+}
+
+// Screen Wipe Countdown
+function startScreenWipeCountdown(seconds = 60) {
+  const wrap = document.getElementById('wipe-bar-wrap');
+  const fill = document.getElementById('wipe-bar-fill');
+  const countdownText = document.getElementById('wipe-countdown-seconds');
+
+  if (!wrap || !fill || !countdownText) return;
+  wrap.style.display = 'block';
+
+  let remaining = seconds;
+  if (wipeInterval) clearInterval(wipeInterval);
+
+  wipeInterval = setInterval(() => {
+    remaining--;
+    countdownText.textContent = `${remaining}s`;
+    const pct = Math.max(0, (remaining / seconds) * 100);
+    fill.style.width = `${pct}%`;
+
+    if (remaining <= 0) {
+      clearInterval(wipeInterval);
+      // Wipe content from memory and screen
+      rawSecretPayload = '';
+      document.getElementById('view-code-block').innerHTML = '<div style="padding: 20px; color: #f87171; text-align: center; font-weight: 600;">🔒 Secret erased from screen memory for your security.</div>';
+      countdownText.textContent = 'Erased';
+      ShareAudio.playBurn();
+    }
+  }, 1000);
 }
 
 function downloadPayloadAsFile(filename, text, mimeType) {
