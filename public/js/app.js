@@ -466,25 +466,25 @@ function renderVaultHistory() {
           </div>
         </td>
         <td>
-          ${item.is_encrypted ? '<span class="status-tag status-active">🔐 AES-256</span>' : '<span class="status-tag" style="background: rgba(255,255,255,0.06);">Plain</span>'}
-          ${item.burn_after_reading ? '<span class="status-tag status-burned" style="margin-left: 4px;">🔥 1-View</span>' : ''}
+          ${item.is_encrypted ? '<span class="status-tag status-active">AES-256</span>' : '<span class="status-tag" style="background: rgba(255,255,255,0.06);">Plain</span>'}
+          ${item.burn_after_reading ? '<span class="status-tag status-burned" style="margin-left: 4px;">1-View Burn</span>' : ''}
         </td>
         <td style="color: var(--text-muted); font-size: 13px;">${createdText}</td>
         <td>
           <span style="font-size: 13px; color: ${isExpired ? 'var(--danger)' : 'var(--cyan)'};">
-            ${isExpired ? '⚠️ Expired' : expiryText}
+            ${isExpired ? 'Expired' : expiryText}
           </span>
         </td>
         <td>
           <div style="display: flex; gap: 6px;">
             <a href="${item.share_url || `/v/${item.token}`}" target="_blank" class="tool-btn" title="Open share">
-              ↗️
+              Open
             </a>
             <button type="button" class="tool-btn" onclick="copyTextToClipboard('${item.token}', 'Token copied!')" title="Copy Token">
-              📋
+              Copy
             </button>
-            <button type="button" class="tool-btn" style="color: var(--danger);" onclick="revokeFromVault('${item.token}', '${item.creator_key}')" title="Revoke & Delete permanently">
-              🗑️
+            <button type="button" class="tool-btn" style="color: var(--danger);" onclick="revokeFromVault('${item.token}', '${item.creator_key}')" title="Revoke and Delete permanently">
+              Revoke
             </button>
           </div>
         </td>
@@ -543,7 +543,7 @@ function showToast(message, type = 'success') {
   const toast = document.createElement('div');
   toast.className = `toast ${type === 'error' ? 'toast-error' : ''}`;
   toast.innerHTML = `
-    <span>${type === 'error' ? '⚠️' : '✅'}</span>
+    <span style="font-weight: 700;">${type === 'error' ? '!' : '✓'}</span>
     <span>${escapeHtml(message)}</span>
   `;
 

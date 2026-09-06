@@ -291,12 +291,11 @@ function showLoading() {
   document.getElementById('view-loading').style.display = 'block';
 }
 
-function showErrorState(title, message, icon = '⚠️') {
+function showErrorState(title, message) {
   hideAllViews();
   const errorCard = document.getElementById('view-error-card');
   document.getElementById('error-title').textContent = title;
   document.getElementById('error-desc').textContent = message;
-  document.getElementById('error-icon').textContent = icon;
   errorCard.style.display = 'block';
 }
 
@@ -315,7 +314,7 @@ function showToast(message, type = 'success') {
   const toast = document.createElement('div');
   toast.className = `toast ${type === 'error' ? 'toast-error' : ''}`;
   toast.innerHTML = `
-    <span>${type === 'error' ? '⚠️' : '✅'}</span>
+    <span style="font-weight: 700;">${type === 'error' ? '!' : '✓'}</span>
     <span>${escapeHtml(message)}</span>
   `;
 
