@@ -2,10 +2,24 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const crypto = require('crypto');
+const os = require('os');
 const { dbOps } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Helper to detect local network IPv4 address for mobile scanning
+function getLocalIpAddress() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return 'localhost';
+}
 
 // Security Headers Middleware
 app.use((req, res, next) => {
@@ -74,6 +88,17 @@ function generateToken(length = 8) {
 function generateCreatorKey() {
   return 'CRK-' + crypto.randomBytes(16).toString('hex');
 }
+
+// API: Get network info for mobile connections
+app.get('/api/network-info', (req, res) => {
+  const lanIp = getLocalIpAddress();
+  res.json({
+    success: true,
+    ip: lanIp,
+    port: PORT,
+    base_url: `http://${lanIp}:${PORT}`
+  });
+});
 
 // API: Create new share (Rate limited: 30 shares / minute)
 app.post('/api/shares', rateLimiter(30, 60000), (req, res) => {
@@ -151,6 +176,10 @@ app.post('/api/shares', rateLimiter(30, 60000), (req, res) => {
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const host = req.get('host');
     const shareUrl = `${protocol}://${host}/v/${token}`;
+    
+    // Construct local network URL so mobile devices on Wi-Fi can open it directly
+    const lanIp = getLocalIpAddress();
+    const networkUrl = `http://${lanIp}:${PORT}/v/${token}`;
 
     res.status(201).json({
       success: true,
@@ -158,6 +187,7 @@ app.post('/api/shares', rateLimiter(30, 60000), (req, res) => {
         token,
         creator_key,
         share_url: shareUrl,
+        network_url: networkUrl,
         title: shareData.title,
         is_encrypted: Boolean(shareData.is_encrypted),
         encryption_hint: shareData.encryption_hint,
@@ -327,11 +357,13 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start Server
-app.listen(PORT, () => {
+// Start Server listening on all interfaces (0.0.0.0)
+app.listen(PORT, '0.0.0.0', () => {
+  const lanIp = getLocalIpAddress();
   console.log(`===========================================`);
   console.log(`🔒 ShareKey Secure Server Running!`);
-  console.log(`🌐 Local URL: http://localhost:${PORT}`);
+  console.log(`🌐 Local URL:   http://localhost:${PORT}`);
+  console.log(`📱 Network URL: http://${lanIp}:${PORT}`);
   console.log(`⚡ Rate-Limiting & Security Headers Enabled`);
   console.log(`===========================================`);
 });

@@ -380,19 +380,21 @@ function displaySuccessModal(shareData) {
   const btnOpen = document.getElementById('btn-open-direct');
 
   tokenText.textContent = shareData.token;
+  // Use network_url (e.g. http://192.168.1.177:3000/v/...) if available so mobile scanning works
+  const mobileLink = shareData.network_url || shareData.share_url;
   urlInput.value = shareData.share_url;
 
   const qrContainer = document.getElementById('modal-qrcode');
   qrContainer.innerHTML = '';
   qrCodeInstance = new QRCode(qrContainer, {
-    text: shareData.share_url,
+    text: mobileLink,
     width: 140,
     height: 140,
     colorDark: '#060911',
     colorLight: '#ffffff'
   });
 
-  const shareMsg = encodeURIComponent(`Secure content shared with you via ShareKey:\nAccess Token: ${shareData.token}\nLink: ${shareData.share_url}`);
+  const shareMsg = encodeURIComponent(`Secure content shared with you via ShareKey:\nAccess Token: ${shareData.token}\nLink: ${mobileLink}`);
   btnWhatsapp.href = `https://api.whatsapp.com/send?text=${shareMsg}`;
   btnEmail.href = `mailto:?subject=${encodeURIComponent('Secure ShareKey Content')}&body=${shareMsg}`;
 
