@@ -357,13 +357,17 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start Server listening on all interfaces (0.0.0.0)
-app.listen(PORT, '0.0.0.0', () => {
-  const lanIp = getLocalIpAddress();
-  console.log(`===========================================`);
-  console.log(`🔒 ShareKey Secure Server Running!`);
-  console.log(`🌐 Local URL:   http://localhost:${PORT}`);
-  console.log(`📱 Network URL: http://${lanIp}:${PORT}`);
-  console.log(`⚡ Rate-Limiting & Security Headers Enabled`);
-  console.log(`===========================================`);
-});
+// Start Server (only listen directly when not on Vercel serverless)
+if (!process.env.VERCEL) {
+  app.listen(PORT, '0.0.0.0', () => {
+    const lanIp = getLocalIpAddress();
+    console.log(`===========================================`);
+    console.log(`🔒 ShareKey Secure Server Running!`);
+    console.log(`🌐 Local URL:   http://localhost:${PORT}`);
+    console.log(`📱 Network URL: http://${lanIp}:${PORT}`);
+    console.log(`⚡ Rate-Limiting & Security Headers Enabled`);
+    console.log(`===========================================`);
+  });
+}
+
+module.exports = app;
