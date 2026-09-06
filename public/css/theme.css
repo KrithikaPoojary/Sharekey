@@ -5,11 +5,11 @@ body.light-theme {
   --bg-card: rgba(255, 255, 255, 0.85);
   --bg-card-hover: rgba(255, 255, 255, 0.95);
   --bg-input: #ffffff;
-  --border-color: rgba(0, 0, 0, 0.08);
+  --border-color: rgba(0, 0, 0, 0.12);
   --border-glow: rgba(16, 185, 129, 0.2);
   --text-main: #0f172a;
   --text-muted: #475569;
-  --text-dim: #94a3b8;
+  --text-dim: #64748b;
   --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
@@ -26,7 +26,7 @@ body.light-theme .code-content-view {
 
 body.light-theme .modal-card {
   background: #ffffff;
-  border-color: rgba(0, 0, 0, 0.1);
+  border-color: rgba(0, 0, 0, 0.15);
 }
 
 body.light-theme .line-number {
@@ -35,6 +35,46 @@ body.light-theme .line-number {
 
 body.light-theme .content-display-wrapper {
   background: #f8fafc;
+}
+
+/* Visible Toggle Switch Styles */
+.slider {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.slider:before {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) !important;
+}
+
+body.light-theme .slider {
+  background-color: #cbd5e1 !important;
+  border: 1.5px solid #94a3b8 !important;
+}
+
+body.light-theme .slider:before {
+  background-color: #ffffff !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3) !important;
+}
+
+body.light-theme input:checked + .slider {
+  background-color: #10b981 !important;
+  border-color: #059669 !important;
+}
+
+body.light-theme input.burn-switch:checked + .slider {
+  background-color: #ef4444 !important;
+  border-color: #dc2626 !important;
+}
+
+/* Clickable Setting Header */
+.setting-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.setting-header:hover .setting-label {
+  color: var(--primary);
 }
 
 /* Strength Meter */
@@ -48,7 +88,7 @@ body.light-theme .content-display-wrapper {
 }
 
 body.light-theme .strength-bar-wrap {
-  background: rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .strength-bar-fill {
